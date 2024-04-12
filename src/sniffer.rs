@@ -1,0 +1,77 @@
+use anyhow::{Context, Result};
+use glob::glob;
+use std::io::BufReader;
+use std::fmt::Display;
+use std::path::PathBuf;
+use std::fs::File;
+
+use crate::consts::HASH_STORE_FILE;
+use crate::utils::{normalize_path, hash_file};
+
+pub struct Sniffer {
+    path: PathBuf,
+    hash_store_file: PathBuf,
+}
+
+impl Sniffer {
+    pub fn new() -> Sniffer {
+        Sniffer {
+            path: PathBuf::new(),
+            hash_store_file: PathBuf::new(),
+        }
+    }
+
+    pub fn path<P: Into<PathBuf>>(mut self, path: P) -> Self {
+        self.path = path.into();
+        self
+    }
+
+    pub fn hash_store_file(mut self, file: PathBuf) -> Self {
+        self.hash_store_file = file;
+        self
+    }
+
+    pub fn sniff(&self) -> Result<()> {
+
+        let _hash_store_file = File::create(&self.hash_store_file)
+            .with_context(|| "Could not create or read hash store file.")?;
+
+        let path = normalize_path(self.path.to_str().unwrap());
+
+        let files = glob(&path).with_context(|| "Could not read files from path.")?;
+
+        for file in files {
+            let file = file?;
+            
+            // skip directories
+            if file.is_dir() {
+                continue;
+            }
+
+            let reader = BufReader::new(File::open(&file)?);
+            let _hash = hash_file(reader)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl Default for Sniffer {
+    fn default() -> Self {
+        Sniffer {
+            path: PathBuf::new(),
+            hash_store_file: PathBuf::from(HASH_STORE_FILE),
+        }
+    }
+}
+
+impl Display for Sniffer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // format and display as a struct
+        write!(
+            f,
+            "Sniffer {{ path: {:?}, hash_store_file: {:?} }}",
+            self.path, self.hash_store_file
+        )
+    }
+}
