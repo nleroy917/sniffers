@@ -1,11 +1,12 @@
 use anyhow::{Context, Result};
 use glob::glob;
-use std::io::BufReader;
+use data_encoding::HEXUPPER;
+use std::io::{BufReader, Write};
 use std::fmt::Display;
 use std::path::PathBuf;
 use std::fs::File;
 
-use crate::consts::HASH_STORE_FILE;
+use crate::consts::{HASH_STORE_FILE, DELIMITER};
 use crate::utils::{normalize_path, hash_file};
 
 pub struct Sniffer {
@@ -31,10 +32,38 @@ impl Sniffer {
         self
     }
 
+    pub fn index(&self) -> Result<()> {
+        let mut hash_store_file = File::create(&self.hash_store_file)
+            .with_context(|| "Could not read create the hash store file.")?;
+
+        let path = normalize_path(self.path.to_str().unwrap());
+
+        let files = glob(&path).with_context(|| "Could not read files from path.")?;
+
+        for file in files {
+            let file = file?;
+            
+            // skip directories
+            if file.is_dir() {
+                continue;
+            }
+
+            let reader = BufReader::new(File::open(&file)?);
+            let hash = hash_file(reader)?;
+            
+            hash_store_file.write_all(file.to_str().unwrap().as_bytes())?;
+            hash_store_file.write_all(DELIMITER.as_bytes())?;
+            hash_store_file.write_all(HEXUPPER.encode(hash.as_ref()).as_bytes())?;
+            hash_store_file.write_all("\n".as_bytes())?;
+        }
+
+        Ok(())
+    }
+
     pub fn sniff(&self) -> Result<()> {
 
-        let _hash_store_file = File::create(&self.hash_store_file)
-            .with_context(|| "Could not create or read hash store file.")?;
+        let _hash_store_file = File::open(&self.hash_store_file)
+            .with_context(|| "Could not locate the hash file. have you run `index`?")?;
 
         let path = normalize_path(self.path.to_str().unwrap());
 
