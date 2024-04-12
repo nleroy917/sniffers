@@ -52,41 +52,34 @@ fn main() -> Result<()> {
     match matches.subcommand() {
         Some((consts::SNIFF_CMD, matches)) => {
             let default_path = consts::DEFAULT_PATH.to_string();
-            let path = matches
-                .get_one::<String>("path")
-                .unwrap_or(&default_path);
+            let path = matches.get_one::<String>("path").unwrap_or(&default_path);
 
             let sniffer = Sniffer::default().path(path);
 
-            sniffer.sniff().with_context(|| {
-                "Could not sniff files"
-            })?;
+            let altered_files = sniffer.sniff().with_context(|| "Could not sniff files")?;
 
-            handle.write_all("Done sniffing!\n".as_bytes())?;
+            for file in altered_files {
+                handle.write_all(format!("Changed: {file}").as_bytes())?;
+                handle.write_all("\n".as_bytes())?;
+            }
             
-        },
+        }
 
         Some((consts::INDEX_CMD, matches)) => {
             let default_path = consts::DEFAULT_PATH.to_string();
-            let path = matches
-                .get_one::<String>("path")
-                .unwrap_or(&default_path);
+            let path = matches.get_one::<String>("path").unwrap_or(&default_path);
 
             let sniffer = Sniffer::default().path(path);
 
-            sniffer.index().with_context(|| {
-                "There was an error running the index."
-            })?;
+            sniffer
+                .index()
+                .with_context(|| "There was an error running the index.")?;
 
-            handle.write_all("Done sniffing!\n".as_bytes())?;
+            handle.write_all("Index complete\n".as_bytes())?;
         }
 
         _ => unreachable!("Something went wrong!"),
     }
-
-    
-
-
 
     Ok(())
 }

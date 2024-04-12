@@ -1,5 +1,5 @@
-use std::io::Read;
 use ring::digest::{Context, Digest, SHA256};
+use std::io::Read;
 
 use anyhow::Result;
 
