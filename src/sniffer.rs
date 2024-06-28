@@ -77,16 +77,15 @@ impl Sniffer {
         // populate an in-memory representation of the hash file store
         for line in hash_store_reader.lines() {
             let line = line?;
-            let entries = line.split(DELIMITER).collect::<Vec<_>>();
+            let entries = line.rsplit_once(DELIMITER);
 
-            // check integrity of the entry
-            ensure!(
-                entries.len() == 2,
-                format!("Unexpected hashfile entry found for line {line}")
-            );
+            if entries.is_none() {
+                anyhow::bail!("Unexpected hashfile entry found for line {line}")
+            }
 
-            let file_name = entries[0];
-            let hash = entries[1];
+            let entries = entries.unwrap();
+            let file_name = entries.0;
+            let hash = entries.1;
 
             hash_store.insert(file_name.to_string(), hash.to_string());
         }
@@ -115,7 +114,7 @@ impl Sniffer {
                 new_hash.clone()
             });
 
-            if *old_hash != new_hash {
+            if (*old_hash != new_hash) && !absolute_path.ends_with(self.hash_store_file.to_str().unwrap()) {
                 // update the hash in the in-memory representation
                 *old_hash = new_hash;
                 altered_files.push(absolute_path);
@@ -125,6 +124,15 @@ impl Sniffer {
         }
 
         // dump in-memory representation back to the hash store file.
+        let mut hash_store_file = File::create(&self.hash_store_file)
+            .with_context(|| "Could not read create the hash store file.")?;
+
+        for (file, hash) in hash_store.iter() {
+            hash_store_file.write_all(file.as_bytes())?;
+            hash_store_file.write_all(DELIMITER.as_bytes())?;
+            hash_store_file.write_all(hash.as_bytes())?;
+            hash_store_file.write_all("\n".as_bytes())?;
+        }
 
         Ok(altered_files)
     }
