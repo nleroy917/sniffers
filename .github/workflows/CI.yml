@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [x86_64, x86, aarch64, armv7]
+        target: [x86_64, x86] # don't support aarch64 on linux, see: https://github.com/briansmith/ring/issues/1728#issuecomment-1758180655
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
