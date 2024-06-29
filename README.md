@@ -1,5 +1,10 @@
 # sniffers
-Basic file sniffer for detecting changes in files and directories, written in Rust.
+Basic file sniffer for detecting changes in files and directories, written in Rust; complete with python bindings (of course).
+
+## Installation
+```bash
+pip install sniffers
+```
 
 ## Usage
 ```python
@@ -18,9 +23,17 @@ for change in changes:
     print(change)
 ```
 
-There also exists a command line interface for this package. You can use it as follows:
+## Command Line Interface
+There also exists a command line interface for this package.
+
+To build and run the CLI, run the following commands:
+```
+cargo install --path .
+```
+
+Then, you can run the CLI as follows:
+
 ```bash
-cargo build --release
-./target/release/sniffers index
-./target/release/sniffers sniff
+sniffers index
+sniffers sniff
 ```

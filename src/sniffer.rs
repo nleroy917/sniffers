@@ -1,4 +1,21 @@
-use anyhow::{ensure, Context, Result};
+//! 
+//! # Sniffer
+//! Core sniffer struct that implements the logic for detecting file changes.
+//! 
+//! ## Usage
+//! ```rust
+//! use sniffers::Sniffer;
+//! 
+//! let sniffer = Sniffer::default();
+//! 
+//! sniffer.index();
+//! 
+//! let altered_files = sniffer.sniff();
+//! 
+//! println!("{:?}", altered_files);
+//! ```
+
+use anyhow::{Context, Result};
 use data_encoding::HEXUPPER;
 use glob::glob;
 use std::collections::HashMap;
@@ -16,6 +33,8 @@ pub struct Sniffer {
 }
 
 impl Sniffer {
+    ///
+    /// Create a new Sniffer instance. This creates a blank Sniffer instance with no path or hash store file.
     pub fn new() -> Sniffer {
         Sniffer {
             path: PathBuf::new(),
@@ -23,16 +42,34 @@ impl Sniffer {
         }
     }
 
+    ///
+    /// Set the path to sniff. This sets the path to sniff for file changes.
+    /// 
+    /// # Arguments
+    /// - `path` - The path to sniff for file changes.
+    /// 
     pub fn path<P: Into<PathBuf>>(mut self, path: P) -> Self {
         self.path = path.into();
         self
     }
 
+    ///
+    /// Set the hash store file. This sets the file to store the hashes of the files in the path.
+    /// 
+    /// # Arguments
+    /// - `file` - The file to store the hashes of the files in the path.
+    /// 
     pub fn hash_store_file(mut self, file: PathBuf) -> Self {
         self.hash_store_file = file;
         self
     }
 
+    ///
+    /// Index the files in the path. This hashes the files in the path and stores the hashes in the hash store file.
+    /// 
+    /// # Returns
+    /// A `Result` with the success or failure of the operation.
+    /// 
     pub fn index(&self) -> Result<()> {
         let mut hash_store_file = File::create(&self.hash_store_file)
             .with_context(|| "Could not read create the hash store file.")?;
@@ -63,6 +100,11 @@ impl Sniffer {
         Ok(())
     }
 
+    ///
+    /// Sniff the files in the path. This compares the hashes of the files in the path with the hashes stored in the hash store file.
+    /// 
+    /// # Returns
+    /// A `Result` with the list of altered files.
     pub fn sniff(&self) -> Result<Vec<String>> {
 
         let mut altered_files: Vec<String> = Vec::new();
